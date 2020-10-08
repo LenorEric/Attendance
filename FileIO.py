@@ -1,6 +1,7 @@
 import StringList
 import os
 import datetime
+import time
 
 
 def minusTime(time):
@@ -26,8 +27,7 @@ class RecordData:
         self.week = ''
         cfg = open('config.ini', 'r')
         self.week = cfg.readline()
-        if self.week != str(datetime.datetime.now().year) + str(
-                datetime.datetime.strptime('20190825', '%Y%m%d').strftime('%W')) + '.dat':
+        if self.week != str(datetime.datetime.now().year) + str(time.strftime("%W")) + '.dat':
             print("It's a new week, maybe you want to reset?")
         if not (os.path.exists(os.path.join('data', self.week))):
             open(os.path.join('data', self.week), 'w')
@@ -40,6 +40,18 @@ class RecordData:
             else:
                 break
         self.getOnGoingList()
+
+    def readData(self):
+        if not (os.path.exists(os.path.join('data', self.week))):
+            open(os.path.join('data', self.week), 'w')
+            return
+        data = open(os.path.join('data', self.week), 'r')
+        while True:
+            datum = data.readline()
+            if datum:
+                self.dataList.append(StringList.String2List(datum))
+            else:
+                break
 
     def getOnGoingList(self):
         count = [0 for i in range(4)]
@@ -64,11 +76,27 @@ class RecordData:
     def printGoingList(self):
         if not (len(self.onGoingList)):
             print("No group ongoing")
+            print()
         for i in range(len(self.onGoingList)):
             for j in range(len(self.dataList)):
                 if self.dataList[-1 - j][0] == self.revHead[self.onGoingList[i]]:
                     print(self.dataList[-1 - j])
                     break
+                print()
+
+    def printLeaveList(self):
+        flg = 1
+        upon = [0 for i in range(4)]
+        for data in self.dataList:
+            upon[self.head[data[0]]] = 1 - upon[self.head[data[0]]]
+            if upon[self.head[data[0]]]:
+                if len(data) > 3:
+                    flg = 0
+                    for i in range(3, len(data), 2):
+                        print(data[i], ' 请假了，理由是： ', data[i + 1])
+        if flg:
+            print("No leave")
+        print()
 
     def queryTime(self):
         for i in range(4):
@@ -99,13 +127,17 @@ class RecordData:
         self.getOnGoingList()
 
     def reset(self):
-        week = str(datetime.datetime.now().year) + str(
-            datetime.datetime.strptime('20190825', '%Y%m%d').strftime('%W')) + '.dat'
+        week = str(datetime.datetime.now().year) + str(time.strftime("%W")) + '.dat'
         cfg = open('config.ini', 'w')
         cfg.write(week)
         cfg.close()
         self.onGoingList = []
+        self.getOnGoingList()
         self.dataList = []
-        data = open(os.path.join('data', self.week), 'w')
-        data.close()
+        self.readData()
+        self.week = week
+        if not (os.path.exists(os.path.join('data', self.week))):
+            data = open(os.path.join('data', self.week), 'w')
+            data.close()
         print('Reset')
+        print()
