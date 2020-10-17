@@ -2,24 +2,29 @@ import StringList
 import os
 import datetime
 import time
+import NameList
 
 
-def minusTime(time):
-    hour0 = int(time[0]) // 100
-    minu0 = int(time[0]) % 100
-    hour1 = int(time[1]) // 100
-    minu1 = int(time[1]) % 100
+def returnName(data):
+    return data[0]
+
+
+def minusTime(timeMus):
+    hour0 = int(timeMus[0]) // 100
+    minu0 = int(timeMus[0]) % 100
+    hour1 = int(timeMus[1]) // 100
+    minu1 = int(timeMus[1]) % 100
     return hour1 * 60 + minu1 - minu0 - hour0 * 60
 
 
 class RecordData:
-    headList = ['卢婧', '周磊', '李麻子', '张三']
+    headList = ['卢婧', '钱浩文', '马驰原', '张沈浩']
     head = {headList[0]: 0, headList[1]: 1, headList[2]: 2, headList[3]: 3}
     revHead = {0: headList[0], 1: headList[1], 2: headList[2], 3: headList[3]}
     onGoingList = []  # 存组号
     dataList = []
     week = ''
-    TOTAL = 960
+    TOTAL = 720
 
     def __init__(self):
         self.onGoingList = []
@@ -55,6 +60,7 @@ class RecordData:
 
     def getOnGoingList(self):
         count = [0 for i in range(4)]
+        self.onGoingList = []
         for i in range(len(self.dataList)):
             count[self.head[self.dataList[i][0]]] = 1 - count[self.head[self.dataList[i][0]]]
         for i in range(4):
@@ -62,18 +68,19 @@ class RecordData:
                 self.onGoingList.append(i)
 
     def calcTime(self, headName):
-        time = [0, 0]
+        time1 = [0, 0]
         switch = 0
         count = 0
         for i in range(len(self.dataList)):
             if self.dataList[i][0] == headName:
-                time[switch] = self.dataList[i][1]
+                time1[switch] = self.dataList[i][1]
                 switch = 1 - switch
                 if switch == 0:
-                    count += minusTime(time)
+                    count += minusTime(time1)
         return count
 
     def printGoingList(self):
+        self.getOnGoingList()
         if not (len(self.onGoingList)):
             print("No group ongoing")
             print()
@@ -82,20 +89,50 @@ class RecordData:
                 if self.dataList[-1 - j][0] == self.revHead[self.onGoingList[i]]:
                     print(self.dataList[-1 - j])
                     break
-                print()
+        print()
 
     def printLeaveList(self):
-        flg = 1
         upon = [0 for i in range(4)]
-        for data in self.dataList:
-            upon[self.head[data[0]]] = 1 - upon[self.head[data[0]]]
-            if upon[self.head[data[0]]]:
-                if len(data) > 3:
-                    flg = 0
-                    for i in range(3, len(data), 2):
-                        print(data[i], ' 请假了，理由是： ', data[i + 1])
-        if flg:
+        leaveList = []
+        for i in range(len(self.dataList)):
+            upon[self.head[self.dataList[i][0]]] = 1 - upon[self.head[self.dataList[i][0]]]
+            if upon[self.head[self.dataList[i][0]]]:
+                if len(self.dataList[i]) > 3:
+                    timeMus = [self.dataList[i][1], 0]
+                    for t in range(i+1, len(self.dataList)):
+                        if self.dataList[t][0] == self.dataList[i][0]:
+                            timeMus[1] = self.dataList[t][1]
+                            break
+                    timeLeave = minusTime(timeMus)
+                    for j in range(3, len(self.dataList[i]), 2):
+                        # print(data[i], ' 请假了，理由是： ', data[i + 1])
+                        for name in NameList.nameSplit(self.dataList[i][j]):
+                            if timeLeave > 0:
+                                leaveList.append([name, self.dataList[i][j + 1], timeLeave])
+        leaveList.sort(key=returnName)
+        if len(leaveList) == 0:
             print("No leave")
+            print()
+            return
+        presentName = leaveList[0][0]
+        altogetherLeave = 0
+        leaverous = []
+        for leave in leaveList:
+            if leave[0] == presentName:
+                altogetherLeave += leave[2]
+                leaverous.append([leave[1], leave[2]])
+            else:
+                print()
+                print(presentName, "请假了共计", altogetherLeave // 60, "小时", altogetherLeave % 60, "分钟:")
+                for lvs in leaverous:
+                    print("    因 ", lvs[0], "请假了", lvs[1] // 60, "小时", lvs[1] % 60, "分钟")
+                presentName = leave[0]
+                altogetherLeave = leave[2]
+                leaverous = [leave[1:3]]
+        print()
+        print(presentName, "请假了共计", altogetherLeave // 60, "小时", altogetherLeave % 60, "分钟:")
+        for lvs in leaverous:
+            print("    因 ", lvs[0], "请假了", lvs[1] // 60, "小时", lvs[1] % 60, "分钟")
         print()
 
     def queryTime(self):
@@ -103,11 +140,19 @@ class RecordData:
             time = self.calcTime(self.revHead[i])
             print(self.revHead[i], ' 小组已经学习了 ', time // 60, ' 小时， ', time % 60, ' 分钟。')
             time = self.TOTAL - time
-            if time >= 0:
+            if time > 0:
                 print('本周还需自习至少 ', time // 60, ' 小时， ', time % 60, ' 分钟。')
             else:
                 print('本周学习任务已经完成')
             print()
+
+    def calcPresentTime(self, name):
+        time = [0, 0]
+        for i in range(len(self.dataList)):
+            if self.dataList[i][0] == name:
+                time[0] = time[1]
+                time[1] = self.dataList[i][1]
+        return minusTime(time)
 
     def saveCommand(self, cmd):
         data = open(os.path.join('data', self.week), 'a')
@@ -115,14 +160,18 @@ class RecordData:
         data.write('\n')
         self.dataList.append(cmd)
         if self.head[cmd[0]] in self.onGoingList:
+            print()
             self.onGoingList.remove(self.head[cmd[0]])
-            time = self.calcTime(cmd[0])
-            print(cmd[0], ' 小组已经学习了 ', time // 60, ' 小时， ', time % 60, ' 分钟。')
-            time = self.TOTAL - time
-            if time >= 0:
-                print('本周还需自习至少 ', time // 60, ' 小时， ', time % 60, ' 分钟。')
+            time1 = self.calcTime(cmd[0])
+            time2 = self.calcPresentTime(cmd[0])
+            print(cmd[0], ' 小组本次已经学习了 ', time2 // 60, ' 小时， ', time2 % 60, ' 分钟。')
+            time1 = self.TOTAL - time1
+            if time1 > 0:
+                print('本周还需自习至少 ', time1 // 60, ' 小时， ', time1 % 60, ' 分钟。')
             else:
                 print('本周学习任务已经完成')
+            print()
+        else:
             print()
         self.getOnGoingList()
 

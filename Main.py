@@ -1,4 +1,5 @@
 import FileIO
+import NameList
 
 data = FileIO.RecordData()
 
@@ -9,6 +10,7 @@ def readCommand():
         exit()
     elif cmd[0] == 'reset':
         data.reset()
+        exit()
     elif cmd[0] == 'query':
         data.queryTime()
     elif cmd[0] == 'going':
@@ -26,6 +28,15 @@ def readCommand():
             print('Invalid Time')
             print()
             return
+        if len(cmd) > 3:
+            for i in range(3, len(cmd), 2):
+                add = 0
+                for name in NameList.nameSplit(cmd[i]):
+                    add += len(name)
+                if add != len(cmd[i]):
+                    print('Invalid leave name')
+                    print('')
+                    return
         data.saveCommand(cmd)
 
 
