@@ -13,6 +13,10 @@ def readCommand():
         exit()
     elif cmd[0] == 'query':
         data.queryTime()
+    elif cmd[0] == 'export':
+        data.export()
+        print("exported")
+        print()
     elif cmd[0] == 'going':
         data.printGoingList()
     elif cmd[0] == 'leave':
