@@ -249,6 +249,8 @@ class RecordData:
         if len(leaveList) == 0:
             saveSheet2("No leave")
             saveSheet2()
+            week = str(datetime.datetime.now().year) + str(time.strftime("%W")) + '.xls'
+            exp.save(os.path.join('C:\\Users\\EC\\Desktop', week))
             return
         presentName = leaveList[0][0]
         altogetherLeave = 0
